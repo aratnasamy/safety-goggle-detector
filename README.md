@@ -7,6 +7,9 @@ It detects faces and checks if each person is wearing **safety goggles** using f
 
 ---
 
+## Prerequisites
+Install uv - https://docs.astral.sh/uv/getting-started/installation/
+
 ## How to Run
 
 1. Install dependencies using uv:
@@ -20,3 +23,9 @@ It detects faces and checks if each person is wearing **safety goggles** using f
    ```
 
 3. The camera will open and start detecting safety goggles. Allow access to open the camera if needed. Focus the camera window and hit "q" to exit.
+
+## Run Model tester
+Use the model tester to test YOLO models on images
+```bash
+uv run model_tester.py --image PATH_TO_IMAGE --model PATH_TO_MODEL
+```

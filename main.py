@@ -8,11 +8,22 @@ import subprocess
 from ultralytics import YOLO
 
 # ============================================================
-# CONFIGURATION - Easy to modify settings
+# CONFIGURATION
 # ============================================================
-INFERENCE_INTERVAL = 0.1  # How often to run detection (in seconds)
+INFERENCE_INTERVAL = 0  # How often to run detection (in seconds)
 FACE_CONFIDENCE_THRESHOLD = 0.5  # Minimum confidence for face detection (0.0 to 1.0)
-GLASSES_CONFIDENCE_THRESHOLD = 0.8  # Minimum confidence for glasses detection (0.0 to 1.0)
+GLASSES_CONFIDENCE_THRESHOLD = 0.6  # Minimum confidence for glasses detection (0.0 to 1.0)
+DEFAULT_GOGGLES_NAMES = [ # Labels that count as goggles/eye protection
+    "goggles",
+    "safety goggles",
+    "safety glasses",
+    "safety-glasses",
+    "eye protection",
+    "eye_protection",
+    "eyewear",
+    "protective eyewear",
+    "protective_eyewear",
+]
 # ============================================================
 
 # Cross-platform audio alert
@@ -42,7 +53,7 @@ def play_alert_tone():
 class SafetyGoggleDetector:
     def __init__(self):
         # Load YOLO model for safety glasses
-        self.model = YOLO("bestn.pt")
+        self.model = YOLO("best.pt")
         
         # Load face detection model (OpenCV DNN)
         print("Loading face detection model...")
@@ -56,11 +67,11 @@ class SafetyGoggleDetector:
             print("Error: Unable to access the webcam.") 
             exit()
         
-        # Optimize camera settings for better performance
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
-        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer to get latest frame
+        # Optimize camera settings for better performance - uncomment if needed
+        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        # self.cap.set(cv2.CAP_PROP_FPS, 30)
+        # self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer to get latest frame
 
         # Create a resizable window (removed fullscreen for better macOS compatibility)
         cv2.namedWindow("Safety Goggle Detection", cv2.WINDOW_NORMAL)
@@ -135,7 +146,7 @@ class SafetyGoggleDetector:
                     if len(results[0].boxes) > 0:
                         for box in results[0].boxes:
                             label = results[0].names[int(box.cls)]
-                            if label == 'safety glasses':
+                            if label in DEFAULT_GOGGLES_NAMES:
                                 has_glasses = True
                                 # Convert box coordinates from crop to full frame
                                 bx1, by1, bx2, by2 = map(int, box.xyxy[0])
@@ -150,16 +161,12 @@ class SafetyGoggleDetector:
                     })
                     
                     if not has_glasses:
-                        alert_start = time.time()
                         self.alert_missing_safety_goggles()
-                        alert_time = time.time() - alert_start
-                        if alert_time > 0.01:  # Only print if significant
-                            print(f"  ⚠️  Alert took: {alert_time*1000:.1f}ms")
             
             # Timing report
             cycle_time = time.time() - cycle_start
             total_yolo_time = sum(yolo_times)
-            print(f"⏱️  Face detection: {face_time*1000:.1f}ms | YOLO ({len(yolo_times)} faces): {total_yolo_time*1000:.1f}ms | Total: {cycle_time*1000:.1f}ms | FPS: {1/cycle_time:.1f}")
+            print(f"Face detection: {face_time*1000:.1f}ms | YOLO ({len(yolo_times)} faces): {total_yolo_time*1000:.1f}ms | Total: {cycle_time*1000:.1f}ms | FPS: {1/cycle_time:.1f}")
             
             # Log detection every minute
             if face_results:
